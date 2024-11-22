@@ -1,0 +1,12 @@
+fastapi
+pydantic
+langchain-core
+langchain-openai
+langchain-community
+serpapi
+langgraph
+python-dotenv
+writerai
+uvicorn
+writer-sdk
+neo4j
