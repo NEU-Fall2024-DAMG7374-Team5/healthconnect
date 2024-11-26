@@ -98,7 +98,7 @@ def setup_neo4j_configs(spark):
 
 print("Connecting to Spark Cluster with configurations")
 spark = SparkSession.builder \
-    .appName("organization_and_demographic_ETL.py") \
+    .appName("encounterETL.py") \
     .config('spark.executor.instances', 1)\
     .config('spark.executor.cores', 2) \
     .config('spark.executor.memory', '2G') \
