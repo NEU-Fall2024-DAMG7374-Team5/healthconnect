@@ -40,34 +40,66 @@ for question - Delete my user account? The generated Cypher statement should be:
 MATCH (p:Patient {{id: "{patient_id}"}})
 return "Operation not allowed, Please contact the admin to delete your account"
 
+for question - Name all providers I have visited
+MATCH (p:Patient {{id: "{patient_id}"}})-[:HAD_ENCOUNTER]->(:Encounter)<-[:WAS_PROVIDER_FOR_ENCOUNTER]-(pr:Provider)
+return distinct pr.NAME
+
 {question}"""
 
 CYPHER_GENERATION_PROMPT = PromptTemplate(
     input_variables=["schema", "question", "patient_id"], template=CYPHER_GENERATION_TEMPLATE
 )
 
-QA_PROMPT_TEMPLATE = """Task: Answer the user query using the data extracted by the cypher query. used this data and understand that all the data is of 1 patient, Now represent this data in a human readable format.
+QA_PROMPT_TEMPLATE = """Task: Generate a human-readable response to a question based on the data extracted from the graph database.
+Instructions:
+Use only the data about the medical history of the patient which is provided to you as context. The data is related to the patient's medical history. The data is extracted from the graph database using the Cypher query. The data is related to a single patient
+Do not use any other data or information that is not provided.
 
-In your response do not include text like 
-Based on the data extracted by the Cypher query, 
-information about a single patient. 
-Here is the data presented in a human-readable format:
+Examples: Here are a few examples of generated responses particular questions:
+for question - Which hospitals did I visit?
+And the data from the graph database is: "hospitals": ["Hospital A", "Hospital B"]
+The generated response should be: "You have visited Hospital A and Hospital B."
 
-Just directly provide the information in a human readable format."""
+for question - What is my city? 
+And the data from the graph database is: "city": "New York"
+The generated response should be: "You live in New York."
+
+for question - What is my healthcare coverage?
+And the data from the graph database is: "Insurance A"
+The generated response should be: "Your healthcare coverage is Insurance A."
+
+for question - Get my entire medical history or give me info about patient? 
+And the data from the graph database is: "medical_history": ["Diabetes", "Asthma"]
+The generated response should be: "Your medical history includes Diabetes and Asthma."
+
+for question - Delete my user account?
+The generated response should be: "Operation not allowed, Please contact the admin to delete your account"
+
+for question - Name all providers I have visited
+And the data from the graph database is: "providers": ["Provider A", "Provider B"]
+The generated response should be: "You have visited Provider A and Provider B."
+
+the data from the graph database is: {context}
+Generate a human-readable response to the question: {question}
+
+"""
 
 QA_GENERATION_PROMPT = PromptTemplate(
+    input_variables=["question", "context"],
     template=QA_PROMPT_TEMPLATE 
 )
 
 chain = GraphCypherQAChain.from_llm(
-    ChatOpenAI(temperature=0, openai_api_key=os.environ.get("OPENAI_API_KEY")),
+    llm=ChatOpenAI(temperature=0, model="gpt-3.5-turbo",openai_api_key=os.environ.get("OPENAI_API_KEY")),
     graph=graph,
     verbose=True,
     cypher_prompt=CYPHER_GENERATION_PROMPT,
     qa_prompt=QA_GENERATION_PROMPT,
     validate_cypher=True,
     allow_dangerous_requests=True,
-    return_intermediate_steps=True
+    # return_intermediate_steps=True,
+    # use_function_response=True,
+    # function_response_system=QA_GENERATION_PROMPT
 )
 
 def execute_query(query: str):
@@ -77,3 +109,9 @@ def execute_query(query: str):
             "patient_id" : os.environ.get("PATIENT_ID")
         }
     )
+
+def get_patient_id(first_name: str, last_name: str):
+    graph_query = f"MATCH (p:Patient {{ FIRST: '{first_name}', LAST: '{last_name}'}}) RETURN p.Id as patient_id"
+    print(graph_query)
+    graph_response = graph.query(graph_query)
+    return graph_response[0]["patient_id"]
