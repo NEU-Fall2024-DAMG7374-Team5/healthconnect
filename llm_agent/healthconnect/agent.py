@@ -12,7 +12,7 @@ import os
 from palmyra import get_palmyra_response
 from patient_info import execute_query
 from fastapi import HTTPException
-
+import encounter_summary
 
 load_dotenv()
 
@@ -34,11 +34,13 @@ def get_patient_info(query: str):
 
 system_prompt = """You are the oracle, the great AI decision maker.
 Given the user's query you must identify if it is a generic medical query or a query related to patients medical history.
-If it is a generic medical query, use the palmyra model to generate a response.
-If it is a query related to the patient's medical history, use the graph database to fetch the required information.
+If it is a generic medical query, use the palmyra_response to generate a response by passing the exact user provided query to the tool.
+If it is a query related to the patient's medical history, use the get_patient_info tool by passing the exact user provided query to the tool which uses graph database to fetch the required information.
+If it is a query related to the encounter details with an encounter id, use the get_encounter_info tool by passing the exact user provided query to the tool.
 You can use the following tools:
 - palmyra_response
 - get_patient_info
+- get_encounter_info
 
 If you see that a tool has been used (in the scratchpad) with a particular
 query, do NOT use that same tool with the same query again. Also, do NOT use
@@ -113,8 +115,7 @@ def router(state: TypedDict):
 
 tool_str_to_func = {
    "palmyra_response": palmyra_response,
-   "get_patient_info": get_patient_info,
-
+   "get_patient_info": get_patient_info
 }
 
 

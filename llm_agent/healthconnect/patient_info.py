@@ -1,8 +1,11 @@
 from langchain.chains import GraphCypherQAChain
 from langchain_community.graphs import Neo4jGraph
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI 
 from langchain_core.prompts.prompt import PromptTemplate
 import os
+from openai import OpenAI
+from fastapi import HTTPException
+
 
 uri = os.environ.get("NEO4J_URI")
 username = os.environ.get("NEO4J_USER")
@@ -16,32 +19,32 @@ Do not use any other relationship types or properties that are not provided.
 Schema:
 {schema}
 Ensure that the cypher query only extracts data related to a specific user by including a condition to filter based on the patient_id.
-Use the {patient_id} as id for patient node for all the filtering, do not use any other value for id of patient node. I only want information which is related to the patient node with id {patient_id}. The direct or indirect relationship with the patient node should be included in the query.
+Use the {patient_id} as id for patient node for all the filtering, do not use any other value for id of patient node. I only want information which is related to the patient node with Id {patient_id}. The direct or indirect relationship with the patient node should be included in the query.
 Do not provide any insert or update or delete statements in cypher query.
 DO not let the user query to make any changes to the database. Only allow the user to query the database. the query should be read only.
 Examples: Here are a few examples of generated Cypher statements for particular questions:
 for question - Which hospitals did I visit? The generated Cypher statement should be:
-MATCH (p:Patient {{id: "{patient_id}"}})-[:VISITED]->(h:Hospital)
+MATCH (p:Patient {{Id: "{patient_id}"}})-[:VISITED]->(h:Hospital)
 return h
 
 for question - What is my city? The generated Cypher statement should be:
-MATCH (p:Patient {{id: "{patient_id}"}})-[:LIVES_IN]->(c:City)
+MATCH (p:Patient {{Id: "{patient_id}"}})-[:LIVES_IN]->(c:City)
 return c
 
 for question - What is my healthcare coverage? The generated Cypher statement should be:
-MATCH (p:Patient {{id: "{patient_id}"}})
+MATCH (p:Patient {{Id: "{patient_id}"}})
 return p.healthcareCoverage
 
 for question - Get my entire medical history or give me info about patient? The generated Cypher statement should be:
-MATCH (p:Patient {{id: "{patient_id}"}})-[r]->(related)
+MATCH (p:Patient {{Id: "{patient_id}"}})-[r]->(related)
 return p, r, related
 
 for question - Delete my user account? The generated Cypher statement should be:
-MATCH (p:Patient {{id: "{patient_id}"}})
+MATCH (p:Patient {{Id: "{patient_id}"}})
 return "Operation not allowed, Please contact the admin to delete your account"
 
 for question - Name all providers I have visited
-MATCH (p:Patient {{id: "{patient_id}"}})-[:HAD_ENCOUNTER]->(:Encounter)<-[:WAS_PROVIDER_FOR_ENCOUNTER]-(pr:Provider)
+MATCH (p:Patient {{Id: "{patient_id}"}})-[:HAD_ENCOUNTER]->(:Encounter)<-[:WAS_PROVIDER_FOR_ENCOUNTER]-(pr:Provider)
 return distinct pr.NAME
 
 {question}"""
@@ -97,21 +100,66 @@ chain = GraphCypherQAChain.from_llm(
     qa_prompt=QA_GENERATION_PROMPT,
     validate_cypher=True,
     allow_dangerous_requests=True,
-    # return_intermediate_steps=True,
-    # use_function_response=True,
-    # function_response_system=QA_GENERATION_PROMPT
+    return_intermediate_steps=True,
 )
 
+# chain = GraphCypherQAChain.from_llm(
+#     llm=ChatOpenAI(temperature=0, model="gpt-3.5-turbo",openai_api_key=os.environ.get("OPENAI_API_KEY")),
+#     cypher_prompt=CYPHER_GENERATION_PROMPT,
+#     graph=graph,
+#     verbose=True,
+#     allow_dangerous_requests=True,
+# )
+
+
 def execute_query(query: str):
-    return chain.invoke(
-        {
-            "query": query, 
-            "patient_id" : os.environ.get("PATIENT_ID")
-        }
-    )
+    patient_id = os.environ.get("PATIENT_ID")
+    print(query, patient_id)
+    try:
+        return chain.invoke(
+            {
+                "query": query, 
+                "patient_id" : patient_id
+            }
+        )
+    except IndexError as e:
+        raise HTTPException(status_code=800, detail="IndexError: list index out of range")
+    except Exception as e:
+        raise HTTPException(status_code=800, detail=e)
 
 def get_patient_id(first_name: str, last_name: str):
     graph_query = f"MATCH (p:Patient {{ FIRST: '{first_name}', LAST: '{last_name}'}}) RETURN p.Id as patient_id"
     print(graph_query)
     graph_response = graph.query(graph_query)
     return graph_response[0]["patient_id"]
+
+def generate_follow_up_question(query: str, data: str):
+    prompt_template = f"""
+    Task: Generate 3 follow-up questions based on the user query and the response data.
+    Instructions:
+    Use the provided response data to generate relevant follow-up questions that the user might ask next.
+    Ensure that the follow-up questions are related to the user query and the response data.
+
+    User Query: {query}
+    Response Data: {data}
+
+    Follow-up Questions:
+    a - 
+    b - 
+    c - 
+    """
+
+    client = OpenAI(
+        api_key=os.environ.get("OPENAI_API_KEY"),  # This is the default and can be omitted
+    )
+
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": prompt_template
+            }
+        ],
+        model="gpt-4o",
+    )
+    return chat_completion
