@@ -35,9 +35,13 @@ if 'conversation_history' not in st.session_state:
     st.session_state.conversation_history = []
 
 def interact_with_chatbot(user_input):
+    # Add the user input to conversation history
     st.session_state.conversation_history.append({"role": "user", "content": user_input})
+    # Process the query using the API
     response, follow_up_questions = process_query(user_input, st.session_state.patient_id)
+    # Add the API response to conversation history
     st.session_state.conversation_history.append({"role": "assistant", "content": response})
+    # Store follow-up questions in session state
     st.session_state.follow_up_questions = follow_up_questions
 
 def send_message():
@@ -189,7 +193,10 @@ def chat_page():
         with col2:
             if st.button("➡️"):
                 if user_input:
-                    interact_with_chatbot(user_input)
+                    interact_with_chatbot(user_input)  # Process input immediately
+                    # Clear the input field by rerunning the app
+                    st.rerun() 
+                    # st.session_state.user_input = ""
         st.markdown('</div>', unsafe_allow_html=True)
 
     # Initial questions (add this part)
