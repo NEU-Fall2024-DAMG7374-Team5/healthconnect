@@ -190,13 +190,17 @@ def chat_page():
         col1, col2 = st.columns([0.9, 0.1])
         with col1:
             user_input = st.text_input("Type your question here...", key="user_input", label_visibility="collapsed")
+
+        def send_message():
+            if user_input:  # Check if there is input
+                interact_with_chatbot(user_input)  
+                st.rerun() 
+                st.session_state.user_input = ""  
+
         with col2:
-            if st.button("➡️"):
-                if user_input:
-                    interact_with_chatbot(user_input)  # Process input immediately
-                    # Clear the input field by rerunning the app
-                    st.rerun() 
-                    # st.session_state.user_input = ""
+            if st.button("➡️", on_click=send_message):
+                pass 
+
         st.markdown('</div>', unsafe_allow_html=True)
 
     # Initial questions (add this part)
