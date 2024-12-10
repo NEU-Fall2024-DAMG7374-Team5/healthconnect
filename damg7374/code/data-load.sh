@@ -1,7 +1,7 @@
 # Check if the properties file path is provided
 if [ $# -eq 0 ]; then
     echo "Error: No properties file path provided."
-    echo "Usage: $0 <AuraDBproperties | Localproperties >"
+    echo "Usage: $0 <AuraDBproperties | Localproperties | properties >"
     exit 1
 fi
 
