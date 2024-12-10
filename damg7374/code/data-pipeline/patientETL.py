@@ -405,7 +405,8 @@ logging.info("Inserting Relationship (:Patient-[:HAS_ADDRESS]->[:Address])")
     patientsFile_DF
     .select(
         "Id",
-        "ADDRESS"
+        "ADDRESS",
+        "ZIPCODE"
     )
     .write
     .format("org.neo4j.spark.DataSource")
@@ -422,7 +423,7 @@ logging.info("Inserting Relationship (:Patient-[:HAS_ADDRESS]->[:Address])")
     #Target
     .option("relationship.target.save.mode", "Match")
     .option("relationship.target.labels", ":Address")
-    .option("relationship.target.node.keys", "ADDRESS:NAME")
+    .option("relationship.target.node.keys", "ADDRESS:NAME, ZIPCODE")
 
     .save()
 )

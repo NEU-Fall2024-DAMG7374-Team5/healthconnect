@@ -77,6 +77,13 @@ $SPARK_HOME/bin/spark-submit \
 $SPARK_HOME/bin/spark-submit \
 --master spark://Adityas-MacBook-Pro.local:7077 \
 --jars ./utilities/neo4j-spark-connector.jar \
+--properties-file ./$1/deviceETLProperties.properties \
+./data-pipeline/deviceETL.py
+
+
+$SPARK_HOME/bin/spark-submit \
+--master spark://Adityas-MacBook-Pro.local:7077 \
+--jars ./utilities/neo4j-spark-connector.jar \
 --properties-file ./$1/immunizationETLProperties.properties \
 ./data-pipeline/immunizationETL.py
 
@@ -93,3 +100,32 @@ $SPARK_HOME/bin/spark-submit \
 --jars ./utilities/neo4j-spark-connector.jar \
 --properties-file ./$1/allergyETLProperties.properties \
 ./data-pipeline/allergyETL.py
+
+
+$SPARK_HOME/bin/spark-submit \
+--master spark://Adityas-MacBook-Pro.local:7077 \
+--jars ./utilities/neo4j-spark-connector.jar \
+--properties-file ./$1/imagingStudyETLProperties.properties \
+./data-pipeline/imagingStudyETL.py
+
+
+$SPARK_HOME/bin/spark-submit \
+--master spark://Adityas-MacBook-Pro.local:7077 \
+--jars ./utilities/neo4j-spark-connector.jar \
+--properties-file ./$1/careplanETLProperties.properties \
+./data-pipeline/careplanETL.py
+
+
+
+$SPARK_HOME/bin/spark-submit \
+--master spark://Adityas-MacBook-Pro.local:7077 \
+--jars ./utilities/neo4j-spark-connector.jar \
+--properties-file ./$1/payerTransitionETLProperties.properties \
+./data-pipeline/payerTransitionETL.py
+
+
+$SPARK_HOME/bin/spark-submit \
+--master spark://Adityas-MacBook-Pro.local:7077 \
+--jars ./utilities/neo4j-spark-connector.jar \
+--properties-file ./$1/claimTransactionETLProperties.properties \
+./data-pipeline/claimTransactionsETL.py

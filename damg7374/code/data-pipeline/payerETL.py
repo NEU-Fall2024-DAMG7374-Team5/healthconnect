@@ -155,8 +155,7 @@ payersFile_DF.printSchema()
 logging.info("Source Dataset Schema Sample Records")
 payersFile_DF.show()
 
-logging.info("Inserting Organization Nodes")
-
+logging.info("Inserting Payer Nodes")
 #Payer Node
 (
     payersFile_DF
